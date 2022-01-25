@@ -16,7 +16,7 @@ function groupBy(list, keyGetter) {
 let fs = require("fs");
 
 function readlines(path) {
-    let file = fs.readFileSync(path, { encoding: 'utf-8' });
+    let file = fs.readFileSync("problems/" + path, { encoding: 'utf-8' });
     let lines = file.split(/\r\n?/);
     return lines;
 }
