@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,9 +21,9 @@ namespace AdventOfCode
 			input = "04005AC33890";
 			input = "880086C3E88112";
 			input = "CE00C43D881120";
-			input = "D8005AC2A8F0";
-			input = "F600BC2D8F";
-			input = "9C005AC2F8F0";
+			//input = "D8005AC2A8F0";
+			//input = "F600BC2D8F";
+			//input = "9C005AC2F8F0";
 			input = "9C0141080250320F1802104A08";
 
 			input = this.ReadInput().First();
@@ -189,7 +190,10 @@ namespace AdventOfCode
 
 		public static long ToLong(string bin)
 		{
-			var multiplier = 1;
+			//if( bin.Length > 10 )
+			//	Console.WriteLine(bin.Length);
+
+			var multiplier = 1L;
 			var result = 0L;
 			for( int i = 0; i < bin.Length; i++ )
 			{
@@ -280,15 +284,15 @@ namespace AdventOfCode
 			return sum;
 		}
 
-		private long CalculateExpression(Packet packet)
+		private BigInteger CalculateExpression(Packet packet)
 		{
 			if( packet is LiteralPacket lp ) return lp.Value;
 			if( packet is OperatorPacket op )
 			{
 				switch( packet.PacketType )
 				{
-					case 0: /* sum */ return op.SubPackets.Sum(sp => this.CalculateExpression(sp));
-					case 1: /* prod */ return op.SubPackets.Aggregate(1L, (acc, sp) => acc * this.CalculateExpression(sp));
+					case 0: /* sum */ return op.SubPackets.Aggregate(new BigInteger(0L), (acc, sp) =>  acc + this.CalculateExpression(sp));
+					case 1: /* prod */ return op.SubPackets.Aggregate(new BigInteger(1L), (acc, sp) => acc * this.CalculateExpression(sp));
 					case 2: /* min */ return op.SubPackets.Min(sp => this.CalculateExpression(sp));
 					case 3: /* min */ return op.SubPackets.Max(sp => this.CalculateExpression(sp));
 					case 5: /* gt */ return this.CalculateExpression(op.SubPackets[0]) > this.CalculateExpression(op.SubPackets[1]) ? 1 : 0;
