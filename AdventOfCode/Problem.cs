@@ -18,12 +18,17 @@ namespace AdventOfCode
 
 		protected void PrintArray<T>(T[,] array, Func<T, string> transform = null, Func<T, ConsoleColor> color = null, string separator = "")
 		{
+			this.PrintArray2(array, (c, i, j) => transform(c), color, separator);
+		}
+
+		protected void PrintArray2<T>(T[,] array, Func<T, int, int, string> transform = null, Func<T, ConsoleColor> color = null, string separator = "")
+		{
 			for( int i = 0; i < array.GetLength(0); i++ )
 			{
 				for( int j = 0; j < array.GetLength(1); j++ )
 				{
 					var el = array[i, j];
-					var s = transform?.Invoke(el) ?? el.ToString();
+					var s = transform?.Invoke(el, i, j) ?? el.ToString();
 					if( color != null )
 						Console.ForegroundColor = color(el);
 					Console.Write(s);

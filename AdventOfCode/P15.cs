@@ -77,7 +77,7 @@ namespace AdventOfCode
 
 		public void SolveB()
 		{
-			var lines = this.ReadInputEx();
+			var lines = this.ReadInput();
 
 			var smallHeight = lines.Length;
 			var smallWidth = lines[0].Length;
@@ -96,7 +96,7 @@ namespace AdventOfCode
 						for( int jj = 0; jj < 5; jj++ )
 						{
 							var ai = ii * smallHeight + i;
-							var aj = ii * smallWidth + j;
+							var aj = jj * smallWidth + j;
 
 							var value = lines[i][j] - '0' + ii + jj;
 							value = (value - 1) % 9 + 1;
@@ -121,14 +121,17 @@ namespace AdventOfCode
 
 			for( int iter = 0; ; iter++ )
 			{
-				if( iter % 1000 == 0 )
-				{
-					this.PrintArray(cost, c => (c == -1 ? "" : c.ToString()).PadLeft(3));
-				}
 				var curr = queue.First();
 				queue.RemoveAt(0);
+				if( iter % 1000 == 0 )
+				{
+					//this.PrintArray(cost, c => (c == -1 ? "" : c.ToString()).PadLeft(3));
+					Console.WriteLine(curr.H - curr.TotalCost);
+				}
+
 				if( curr.I == height - 1 && curr.J == width - 1 )
 				{
+					//this.PrintArray2(map, (c, i, j) => curr.Visited.Any(v => v.I == i && v.J == j) ? "x" : ".");
 					Console.WriteLine(curr.TotalCost);
 					break;
 				}
