@@ -8,29 +8,14 @@ class Scanner():
 
 	def genHashes(self):
 		size = len(self.coords)
-		triplets = []
-		for i in range(size - 2):
-			for j in range(i + 1, size - 1):
-				for k in range(j + 1, size):
-					triplets.append((self.coords[i], self.coords[j], self.coords[k]))
-		self.hashes = [self.genHash(t) for t in triplets]
+		self.hashes = []
+		for i in range(size - 1):
+			for j in range(i + 1, size):
+				self.hashes.append((self.genHash(self.coords[i], self.coords[j]), i, j))
 	
-	def genHash(self, triplet):
-		a = triplet[0] * 3
-		b = triplet[1] * 3
-		c = triplet[2] * 3
-
-		center = np.floor_divide(a + b + c, 3)
-
-		ar = a - center
-		br = b - center
-		cr = c - center
-
-		hashes = []
-		for v in [ar, br, cr]:
-			arr = sorted([abs(x) for x in [v[0], v[1], v[2]]])
-			hashes.append(str(arr))
-		return str(sorted(hashes))
+	def genHash(self, a, b):
+		v = a - b
+		return str(sorted([abs(x) for x in [v[0], v[1], v[2]]]))
 
 f = open(filename)
 input = f.read()
@@ -69,14 +54,72 @@ print("hashing done")
 # 		counts[2] += 1
 # print(counts)
 
+# pairs = [(sidx, oidx, [o_hash, ...]), ...]
+# o_hash = (hash, i, j)
+pairs = []
+
+hashes = [[h[0] for h in s.hashes] for s in scanners]
+
 for scanner in scanners:
-	other_scanners = [s for s in scanners if s != scanner]
-	nums = []
-	for os in other_scanners:
-		num_matching = len([h for h in os.hashes if h in scanner.hashes])
-		if num_matching >= 220:
-			nums.append((num_matching, scanners.index(os)))
+	sidx = scanners.index(scanner)
+	for osidx in range(sidx + 1, len(scanners)):
+		matching = []
+		for oshidx in range(len(hashes[osidx])):
+			if hashes[osidx][oshidx] in hashes[sidx]:
+				matching.append(scanners[osidx].hashes[oshidx])
+		if len(matching) >= 66:
+			print(sidx, osidx)
+			pair = (sidx, osidx, matching)
+			pairs.append(pair)
 
-	print(scanners.index(scanner), nums)
+def genRot(a, b):
+	aa, bb = np.abs(a), np.abs(b)
+	rot = np.zeros((3, 3), np.int32)
+	for i in range(3):
+		for j in range(3):
+			if(aa[i] == bb[j]):
+				rot[i, j] = 1
+	brot = np.matmul(a, rot)
 
+	sign = np.eye(3, dtype=np.int32)
+	for i in range(3):
+		if b[i] != brot[i]:
+			sign[i, i] = -1
 	
+	rot = np.matmul(rot, sign)
+	# np.matmul(a, rot) == b
+	return rot
+
+def getTransformInner(s1, s2, idxp, rot):
+	s2rot = np.matmul(s2.coords, rot)
+	idx1, idx2 = idxp
+	dv = s1.coords[idx1] - s2rot[idx2]
+	d = np.matmul(np.ones((s2rot.shape[0], 1), dtype=np.int32), dv.reshape((1, 3)))
+	s2rot_trans = s2rot + d
+	print(s2rot_trans)
+	print(s1.coords)
+	#todo compare s2rot_trans and s1.coords, if fits, return
+
+def getTransform(pair):
+	s1 = scanners[pair[0]]
+	s2 = scanners[pair[1]]
+	matches = pair[2]
+	hash2 = matches[0]
+	hash1 = next(h for h in s1.hashes if h[0] == hash2[0])
+	rot1 = genRot(s2.coords[hash2[1]] - s2.coords[hash2[2]], s1.coords[hash1[1]] - s1.coords[hash1[2]])
+	rot2 = rot1 * -1
+	idxp1 = (hash1[1], hash2[1])
+	idxp2 = (hash1[1], hash2[2])
+	ts = [
+		getTransformInner(s1, s2, idxp1, rot1),
+		getTransformInner(s1, s2, idxp2, rot1),
+		getTransformInner(s1, s2, idxp1, rot2),
+		getTransformInner(s1, s2, idxp2, rot2)
+	]
+	for t in ts:
+		if(t):
+			return t
+
+t = getTransform(pairs[0])
+
+print("done")
