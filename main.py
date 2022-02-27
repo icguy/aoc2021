@@ -2,7 +2,7 @@ import numpy as np
 
 global scanners
 
-filename = "./problems/p19ex.txt"
+filename = "./problems/p19.txt"
 
 class Scanner():
 	def __init__(self, coords):
@@ -89,6 +89,7 @@ class TreeNode:
 		self.children = []
 		self.coords = None
 		self.pair = pair
+		self.child_centers = np.array([[0, 0, 0]], dtype=np.int32)
 
 def buildTree(pairs):
 	used_indexes = []
@@ -113,14 +114,31 @@ def getAllCoords(tree):
 	global scanners
 
 	allcoords = []
+	allchildcenters = [tree.child_centers]
 	for child in tree.children:
 		t = getTransform(child.pair)
 		coords = getAllCoords(child)
 		points = transformPoints(coords, t)
 		allcoords.append(points)
+		centers = transformPoints(child.child_centers, t)
+		allchildcenters.append(centers)
 		pass
 	allcoords.append(scanners[tree.idx].coords)
+	tree.child_centers = np.concatenate(allchildcenters, axis=0)
 	return np.concatenate(allcoords, axis=0)
+
+def getSpan(tree):
+	points = tree.child_centers
+	max = 0
+	for i in range(points.shape[0]):
+		v1 = points[i,:]
+		for j in range(i + 1, points.shape[0]):
+			v2 = points[j,:]
+			d = v1 - v2
+			norm = np.linalg.norm(d, ord=1)
+			if norm > max:
+				max = norm
+	return max
 
 def run():
 	global scanners
@@ -187,6 +205,7 @@ def run():
 	coords = getAllCoords(tree)
 	print(np.unique(coords, axis=0).shape)
 
+	print(getSpan(tree))
 	print("done")
 
 run()
