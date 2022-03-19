@@ -59,7 +59,7 @@ namespace AdventOfCode
 
 		public void SolveB()
 		{
-			var input = this.ReadInput();
+			var input = this.ReadInputEx();
 			var steps = input.Select(i =>
 			{
 				var tokens = i.Split(new string[] { " ", "=", "..", "x", "y", "z", "," }, StringSplitOptions.RemoveEmptyEntries);
@@ -76,6 +76,33 @@ namespace AdventOfCode
 			})
 				.ToList();
 
+			var numOn = new BigInteger(0);
+			var size = new BigInteger(1);
+			foreach( var region in this.GenerateRegions(steps) )
+			{
+				foreach( var step in steps )
+				{
+					var xOk = region.XMin >= step.XMin && region.XMax <= step.XMax;
+					var yOk = region.YMin >= step.YMin && region.YMax <= step.YMax;
+					var zOk = region.ZMin >= step.ZMin && region.ZMax <= step.ZMax;
+					if( xOk && yOk && zOk )
+					{
+						region.TurnOn = step.TurnOn;
+					}
+				}
+
+				if( region.TurnOn )
+				{
+					size = 1;
+					size *= region.XMax - region.XMin + 1;
+					size *= region.YMax - region.YMin + 1;
+					size *= region.ZMax - region.ZMin + 1;
+					numOn += size;
+				}
+			}
+		}
+
+		IEnumerable<Step> GenerateRegions(List<Step> steps) {
 			var xLimits = new List<int>();
 			foreach( var step in steps )
 			{
@@ -97,9 +124,7 @@ namespace AdventOfCode
 			xLimits.Sort();
 			yLimits.Sort();
 			zLimits.Sort();
-			var regions = new List<Step>();
-			var numOn = new BigInteger(0);
-			var size = new BigInteger(1);
+
 			for( int i = 1; i < xLimits.Count; i++ )
 			{
 				Console.WriteLine(i);
@@ -107,7 +132,7 @@ namespace AdventOfCode
 				{
 					for( int k = 1; k < zLimits.Count; k++ )
 					{
-						var region = new Step
+						yield return new Step
 						{
 							TurnOn = false,
 							XMin = xLimits[i - 1],
@@ -117,26 +142,6 @@ namespace AdventOfCode
 							ZMin = zLimits[k - 1],
 							ZMax = zLimits[k] - 1,
 						};
-
-						foreach( var step in steps )
-						{
-							var xOk = region.XMin >= step.XMin && region.XMax <= step.XMax;
-							var yOk = region.YMin >= step.YMin && region.YMax <= step.YMax;
-							var zOk = region.ZMin >= step.ZMin && region.ZMax <= step.ZMax;
-							if( xOk && yOk && zOk )
-							{
-								region.TurnOn = step.TurnOn;
-							}
-						}
-
-						if(region.TurnOn)
-						{
-							size = 1;
-							size *= region.XMax - region.XMin + 1;
-							size *= region.YMax - region.YMin + 1;
-							size *= region.ZMax - region.ZMin + 1;
-							numOn += size;
-						}
 					}
 				}
 			}
