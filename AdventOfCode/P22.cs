@@ -100,51 +100,101 @@ namespace AdventOfCode
 					numOn += size;
 				}
 			}
+			Console.WriteLine(numOn);
 		}
 
-		IEnumerable<Step> GenerateRegions(List<Step> steps) {
-			var xLimits = new List<int>();
+		List<Step> GenerateRegions(List<Step> steps)
+		{
+			var regions = new List<Step>();
 			foreach( var step in steps )
 			{
-				xLimits.Add(step.XMin);
-				xLimits.Add(step.XMax + 1);
-			}
-			var yLimits = new List<int>();
-			foreach( var step in steps )
-			{
-				yLimits.Add(step.YMin);
-				yLimits.Add(step.YMax + 1);
-			}
-			var zLimits = new List<int>();
-			foreach( var step in steps )
-			{
-				zLimits.Add(step.ZMin);
-				zLimits.Add(step.ZMax + 1);
-			}
-			xLimits.Sort();
-			yLimits.Sort();
-			zLimits.Sort();
-
-			for( int i = 1; i < xLimits.Count; i++ )
-			{
-				Console.WriteLine(i);
-				for( int j = 1; j < yLimits.Count; j++ )
+				foreach( var region in regions.ToList() )
 				{
-					for( int k = 1; k < zLimits.Count; k++ )
+					if( this.Contains(step, region) )
 					{
-						yield return new Step
+						regions.Remove(region);
+					}
+					else
+					{
+						var newRegions = this.Subtract(step, region).ToList();
+						if( newRegions.Count > 0 )
 						{
-							TurnOn = false,
-							XMin = xLimits[i - 1],
-							XMax = xLimits[i] - 1,
-							YMin = yLimits[j - 1],
-							YMax = yLimits[j] - 1,
-							ZMin = zLimits[k - 1],
-							ZMax = zLimits[k] - 1,
-						};
+							regions.Remove(region);
+							regions.AddRange(newRegions);
+						}
 					}
 				}
+				regions.Add(step);
 			}
+			return regions;
+		}
+
+		static bool Between(int val, int min, int max) => val >= min && val <= max;
+
+		IEnumerable<Step> Subtract(Step step, Step region)
+		{
+			var xOk = Between(step.XMin, region.XMin, region.XMax) || Between(step.XMax, region.XMin, region.XMax);
+			var yOk = Between(step.YMin, region.YMin, region.YMax) || Between(step.YMax, region.YMin, region.YMax);
+			var zOk = Between(step.ZMin, region.ZMin, region.ZMax) || Between(step.ZMax, region.ZMin, region.ZMax);
+
+			if( xOk && yOk && zOk )
+			{
+				foreach( var xIntervals in this.Intersect(step.XMin, step.XMax, region.XMin, region.XMax) )
+					foreach( var yIntervals in this.Intersect(step.YMin, step.YMax, region.YMin, region.YMax) )
+						foreach( var zIntervals in this.Intersect(step.ZMin, step.ZMax, region.ZMin, region.ZMax) )
+						{
+							var newRegion = new Step
+							{
+								XMin = xIntervals.min,
+								XMax = xIntervals.max,
+								YMin = yIntervals.min,
+								YMax = yIntervals.max,
+								ZMin = zIntervals.min,
+								ZMax = zIntervals.max,
+								TurnOn = region.TurnOn
+							};
+
+							if( !this.Contains(step, newRegion) )
+								yield return newRegion;
+						}
+			}
+		}
+
+		IEnumerable<(int min, int max)> Intersect(int stepMin, int stepMax, int regionMin, int regionMax)
+		{
+			// R   |------|
+			// S |----|
+			if(stepMin <= regionMin && stepMax <= regionMax)
+			{
+				yield return (regionMin, stepMax);
+				yield return (stepMax + 1, regionMax);
+			}
+
+			// R |------|
+			// S   |--|
+			if(regionMin <= stepMin && stepMax <= regionMax)
+			{
+				yield return (regionMin, stepMin - 1);
+				yield return (stepMin, stepMax);
+				yield return (stepMax + 1, regionMax);
+			}
+
+			// R |------|
+			// S     |----|
+			if( regionMin <= stepMin && regionMax <= stepMax )
+			{
+				yield return (regionMin, stepMin - 1);
+				yield return (stepMin, regionMax);
+			}
+		}
+
+
+		bool Contains(Step step, Step region)
+		{
+			var xOk = step.XMin <= region.XMin && region.XMax <= step.XMax;
+			var yOk = step.YMin <= region.YMin && region.YMax <= step.YMax;
+			var zOk = step.ZMin <= region.ZMin && region.ZMax <= step.ZMax;
+			return xOk && yOk && zOk;
 		}
 
 		class Step
@@ -156,6 +206,8 @@ namespace AdventOfCode
 			public int ZMin { get; set; }
 			public int ZMax { get; set; }
 			public bool TurnOn { get; set; }
+
+			public override string ToString() => $"{(TurnOn ? "on " : "off")} x({XMin},{XMax}) y({YMin},{YMax}) z({ZMin},{ZMax})";
 		}
 
 		class Cube
